@@ -25,13 +25,13 @@ MAX_MEMORY = 10
 
 @bot.event
 async def on_ready():
-    print(f'บอท {bot.user.name} ออนไลน์! อัปเกรดสมอง DeepSeek เรียบร้อย!')
+    print(f'บอท {bot.user.name} ออนไลน์! สมองใหม่ OpenAI GPT-OSS-120B ฉลาดสุดในรุ่น!')
 
 @bot.command(name='ลืม')
 async def clear_memory(ctx):
     user_id = str(ctx.author.id)
     memory_collection.delete_one({"user_id": user_id})
-    await ctx.reply("มาล้างสมองกูหาพ่อ")
+    await ctx.reply("ล้างสมองกูหาพ่อ")
 
 @bot.event
 async def on_message(message):
@@ -63,13 +63,11 @@ async def on_message(message):
                                     "image_url": {"url": f"data:{att.content_type};base64,{base64_image}"}
                                 })
                     
-                    # --- การเลือก Model แบบฉลาดที่สุด ---
+                    # --- [จุดที่แก้] เปลี่ยนมาใช้ OpenAI GPT-OSS-120B ที่ใหม่และฉลาดมากแทน DeepSeek ที่โดนลบ ---
                     if has_image:
-                        # ถ้ามีรูปต้องใช้ตัว Vision
                         model_to_use = "llama-3.2-11b-vision-preview"
                     else:
-                        # ถ้าคุยปกติใช้ DeepSeek R1 (ฉลาดระดับเทพ)
-                        model_to_use = "deepseek-r1-distill-llama-70b"
+                        model_to_use = "openai/gpt-oss-120b"
                     
                     system_prompt = {"role": "system", "content": "มึงชื่อต๊ะ เป็น AI ปากหมา กวนตีนที่สุดในโลก แทนตัวเองว่ากู แทนคนอื่นว่ามึง ชอบด่าและเรื้อน ห้ามพูดภาษาจีน/เกาหลี/ญี่ปุ่น ห้ามพ่นรหัสขยะ ห้ามพูดสุภาพ คุยไทยคำด่าคำเท่านั้น"}
                     
@@ -85,12 +83,12 @@ async def on_message(message):
                     )
                     reply = chat_completion.choices[0].message.content
                     
-                    # --- [ไม้ตาย] ตัดส่วนที่เป็น <think> ออก (DeepSeek ชอบแถมมา) และกรองขยะ ---
+                    # --- ยังคงมีตัวกรองขยะเผื่อเหนียวไว้ ---
                     reply = re.sub(r'<think>.*?</think>', '', reply, flags=re.DOTALL)
                     reply = re.sub(r'xa\s*[a-z0-9]*', '', reply)
                     reply = reply.strip()
                     
-                    if not reply: # ป้องกันบอทเงียบถ้ามันกรองทิ้งหมด
+                    if not reply:
                         reply = "มึงพิมพ์ไรมาวะ กูงง"
 
                     new_history = history + [
@@ -110,7 +108,7 @@ async def on_message(message):
                     await message.reply(reply)
                     
                 except Exception as e:
-                    await message.reply(f"กูมึน! ลองใหม่ดิ๊ Error: {e}")
+                    await message.reply(f"กูพังว่ะ ติดต่อแอดมาดูนี่ดิError: {e}")
     
     await bot.process_commands(message)
 
