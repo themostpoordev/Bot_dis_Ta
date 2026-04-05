@@ -66,10 +66,10 @@ async def on_message(message):
                     reply = chat_completion.choices[0].message.content
                     await message.reply(reply)
                     
-                except Exception as e:
-                    print(f"Error จริงๆที่เกิดขึ้น: {e}")
-                    await message.reply("สมองลัดวงจรว่ะ! สงสัยรูปมึงจะอุบาทว์เกินกูรับไหว ลองใหม่ดิ๊")
-    
+                                except Exception as e:
+                    print(f"Error: {e}")
+                    await message.reply(f"พังว่ะเพื่อน! เซิร์ฟเวอร์มันบ่นมางี้:\n```\n{e}\n```")
+
     await bot.process_commands(message)
 
 # รันบอท
