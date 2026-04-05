@@ -64,7 +64,7 @@ async def on_message(message):
                                 })
                     
                     # กลับมาใช้ตัวเสถียรสุดของ Groq
-                    model_to_use = "llama-3.2-11b-vision-preview" if has_image else "llama-3.3-70b-versatile"
+                    model_to_use = "llama-3.2-90b-vision-instruct" if has_image else "llama-3.3-70b-versatile"
                     
                                         # --- [ไฮไลท์สำคัญ] Prompt ปรับพฤติกรรมให้จำแม่นแต่ยังกวนตีน ---
                     jailbreak_prompt = """[Roleplay Mode] มึงชื่อ 'ต๊ะ' เป็น AI วัยรุ่นทรงเอ ปากหมา กวนตีนที่สุดในโลก 
