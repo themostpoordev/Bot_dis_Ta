@@ -42,12 +42,12 @@ async def on_message(message):
                             if att.content_type and att.content_type.startswith('image/'):
                                 has_image = True
                                 
-                                # --- จุดที่อัปเกรด: โหลดรูปแล้วแปลงเป็นรหัส Base64 ---
-                                image_data = await att.read() # ให้บอทโหลดรูปมาเก็บไว้
-                                base64_image = base64.b64encode(image_data).decode('utf-8') # แปลงเป็นรหัส
+                                # ให้บอทโหลดรูปมาเก็บไว้ แล้วแปลงเป็นรหัส Base64
+                                image_data = await att.read() 
+                                base64_image = base64.b64encode(image_data).decode('utf-8') 
                                 mime_type = att.content_type
                                 
-                                # ยัดรหัสรูปลงไปตรงๆ ไม่ง้อลิงก์!
+                                # ยัดรหัสรูปลงไปตรงๆ
                                 user_message_content.append({
                                     "type": "image_url",
                                     "image_url": {"url": f"data:{mime_type};base64,{base64_image}"}
@@ -66,10 +66,11 @@ async def on_message(message):
                     reply = chat_completion.choices[0].message.content
                     await message.reply(reply)
                     
-                                except Exception as e:
+                except Exception as e:
+                    # ตรงนี้แหละคือตัวคาย Error ของจริง
                     print(f"Error: {e}")
                     await message.reply(f"พังว่ะเพื่อน! เซิร์ฟเวอร์มันบ่นมางี้:\n```\n{e}\n```")
-
+    
     await bot.process_commands(message)
 
 # รันบอท
