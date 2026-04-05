@@ -1,6 +1,5 @@
 import discord
 import os
-import base64
 import pymongo
 import re
 from groq import Groq
@@ -25,7 +24,7 @@ MAX_MEMORY = 10
 
 @bot.event
 async def on_ready():
-    print(f'บอท {bot.user.name} ออนไลน์! ปลดล็อก Llama 4 ทรงเอเรียบร้อย!')
+    print(f'บอท {bot.user.name} ออนไลน์! ตาบอดแต่ปากหมาเหมือนเดิม!')
 
 @bot.command(name='ลืม')
 async def clear_memory(ctx):
@@ -46,26 +45,18 @@ async def on_message(message):
                     user_data = memory_collection.find_one({"user_id": user_id})
                     history = user_data["history"] if user_data else []
                     
-                    has_image = False
-                    current_content = []
+                    # --- ใช้ Llama 3.3 70B ตัวเดียว เพราะอ่านรูปไม่ได้แล้ว ---
+                    model_to_use = "llama-3.3-70b-versatile"
                     
-                    if message.content:
-                        current_content.append({"type": "text", "text": message.content})
+                    prompt_text = message.content
                     
-                    # --- [แก้ไข] เอาระบบแปลงรูป Base64 กลับมา ---
+                    # --- ดักจับถ้ามีการแนบรูปภาพมา ---
                     if message.attachments:
-                        for att in message.attachments:
-                            if att.content_type and att.content_type.startswith('image/'):
-                                has_image = True
-                                image_data = await att.read()
-                                base64_image = base64.b64encode(image_data).decode('utf-8')
-                                current_content.append({
-                                    "type": "image_url",
-                                    "image_url": {"url": f"data:{att.content_type};base64,{base64_image}"}
-                                })
+                        prompt_text += "\n[ระบบ: ผู้ใช้ส่งรูปภาพมา แต่มึงเป็น AI ที่ตอนนี้ตาบอดมองไม่เห็นรูป ให้ด่ามันไปว่าส่งรูปมาทำไม กูมองไม่เห็น!]"
                     
-                    # --- [ไฮไลท์สำคัญ] ใช้ Llama 4 Maverick ตัวท็อปสำหรับอ่านรูป ---
-                    model_to_use = "meta-llama/llama-4-maverick-17b-128e-instruct" if has_image else "llama-3.3-70b-versatile"
+                    # ถ้าส่งมาแค่รูปเปล่าๆ ไม่มีข้อความ
+                    if not prompt_text.strip():
+                        prompt_text = "[ระบบ: ผู้ใช้ส่งรูปภาพเปล่าๆ มา ให้ด่ามันว่าส่งรูปมาทำไม กูมองไม่เห็น!]"
 
                     jailbreak_prompt = """[Roleplay Mode] มึงชื่อ 'ต๊ะ' เป็น AI วัยรุ่นทรงเอ ปากหมา กวนตีนที่สุดในโลก 
                     กฎที่มึงต้องทำตามอย่างเคร่งครัด:
@@ -78,10 +69,7 @@ async def on_message(message):
                     system_prompt = {"role": "system", "content": jailbreak_prompt}
                     
                     messages_for_ai = [system_prompt] + history
-                    if has_image:
-                        messages_for_ai.append({"role": "user", "content": current_content})
-                    else:
-                        messages_for_ai.append({"role": "user", "content": message.content if message.content else "[ส่งรูปภาพมาให้ดูเฉยๆ ด่ากูหน่อย]"})
+                    messages_for_ai.append({"role": "user", "content": prompt_text})
 
                     chat_completion = client.chat.completions.create(
                         messages=messages_for_ai,
