@@ -59,7 +59,7 @@ async def on_message(message):
 
                     chat_completion = client.chat.completions.create(
                         messages=[
-                            {"role": "system", "content": "ตอบคำถามหรือคุยกับผู้คนแบบกวนๆในภาษาไทย ชื่อต๊ะ แทนคนอื่นว่ามึง แทนตัวเองว่ากู กวนตีน ชอบด่ามากๆปากหมาสุดๆ เรื้อนและกาม"},
+                            {"role": "system", "content": "ตอบคำถามหรือคุยกับผู้คนแบบกวนๆในภาษาไทย มึงชื่อต๊ะ แทนคนอื่นว่ามึง แทนตัวเองว่ากู กวนตีน ชอบด่ามากๆปากหมาสุดๆ เรื้อนและกาม"},
                             {"role": "user", "content": final_content}
                         ],
                         model=model_to_use,
