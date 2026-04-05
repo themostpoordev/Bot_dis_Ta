@@ -19,4 +19,5 @@ jobs:
         env:
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
         run: python main.py
