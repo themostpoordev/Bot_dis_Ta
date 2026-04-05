@@ -8,8 +8,7 @@ from discord.ext import commands
 # --- 1. ตั้งค่า Groq AI ---
 client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
-# --- 2. ตั้งค่า MongoDB (ดึงจาก GitHub Secrets เพื่อความปลอดภัย!) ---
-# มันจะไปอ่านค่า MONGODB_URI ที่มึงเพิ่งตั้งไว้ใน GitHub
+# --- 2. ตั้งค่า MongoDB ---
 MONGO_URL = os.environ.get("MONGODB_URI") 
 mongo_client = pymongo.MongoClient(MONGO_URL)
 db = mongo_client["tee_bot_db"]
@@ -21,18 +20,27 @@ intents.message_content = True
 bot = commands.Bot(command_prefix='!', intents=intents)
 
 ALLOWED_CHANNEL_ID = 1490026273408291128 
-MAX_MEMORY = 10 
+MAX_MEMORY = 15 # เพิ่มความจำให้ยาวขึ้นอีกนิด
 
 @bot.event
 async def on_ready():
-    print(f'บอท {bot.user.name} ออนไลน์แล้ว! ระบบความจำปลอดภัย 100%!')
+    print(f'บอท {bot.user.name} ออนไลน์! เลิกพ่นภาษาจีนแน่นอน!')
+
+# --- ฟังก์ชันใหม่: สั่งล้างสมอง ---
+@bot.command(name='ลืม')
+async def clear_memory(ctx):
+    user_id = str(ctx.author.id)
+    memory_collection.delete_one({"user_id": user_id})
+    await ctx.reply("มึงมาล้างสมองกูหาพ่อ")
 
 @bot.event
 async def on_message(message):
     if message.author == bot.user:
         return
 
+    # ให้ทำงานเฉพาะในห้องที่กำหนด
     if message.channel.id == ALLOWED_CHANNEL_ID:
+        # ถ้าไม่ใช่คำสั่ง ! (เช่น !ลืม) ให้บอทตอบปกติ
         if not message.content.startswith('!'):
             async with message.channel.typing():
                 try:
@@ -57,23 +65,27 @@ async def on_message(message):
                                     "image_url": {"url": f"data:{att.content_type};base64,{base64_image}"}
                                 })
                     
-                    model_to_use = "meta-llama/llama-4-scout-17b-16e-instruct" if has_image else "llama-3.3-70b-versatile"
-                    system_prompt = {"role": "system", "content": "มึงชื่อต๊ะ เป็น AI ปากหมา กวนตีนที่สุดในโลก แทนตัวเองว่ากู แทนคนอื่นว่ามึง ชอบด่าและเรื้อน แต่จำแม่นมาก ห้ามพูดรหัสแปลกๆ เช่น xa xa หรือข้อความขยะท้ายประโยคเด็ดขาด คุยแบบภาษาคนปกติที่กวนตีนเท่านั้น"}
-
+                    # --- แก้จุดพัง: เปลี่ยนมาใช้ Llama-3.3-70b ตัวเดียวไปเลย นิ่งกว่า ไม่พ่นภาษาจีน ---
+                    model_to_use = "llama-3.3-70b-versatile"
+                    
+                    system_prompt = {"role": "system", "content": "มึงชื่อต๊ะ เป็น AI ปากหมา กวนตีนที่สุดในโลก แทนตัวเองว่ากู แทนคนอื่นว่ามึง ชอบด่าและเรื้อน ห้ามพูดภาษาจีน ห้ามพ่นรหัสขยะ ห้ามสุภาพ คุยไทยคำด่าคำแบบคนไทยเท่านั้น"}
+                    
                     messages_for_ai = [system_prompt] + history
                     if has_image:
                         messages_for_ai.append({"role": "user", "content": current_content})
                     else:
-                        messages_for_ai.append({"role": "user", "content": message.content if message.content else "ดูรูปนี้หน่อย"})
+                        messages_for_ai.append({"role": "user", "content": message.content})
 
                     chat_completion = client.chat.completions.create(
                         messages=messages_for_ai,
                         model=model_to_use,
+                        temperature=0.9, # ลดความกาวลงนิดนึง
                     )
                     reply = chat_completion.choices[0].message.content
                     
+                    # อัปเดต DB
                     new_history = history + [
-                        {"role": "user", "content": message.content if message.content else "[ส่งรูปมา]"},
+                        {"role": "user", "content": message.content if message.content else "[รูปภาพ]"},
                         {"role": "assistant", "content": reply}
                     ]
                     
@@ -90,7 +102,7 @@ async def on_message(message):
                     
                 except Exception as e:
                     print(f"Error: {e}")
-                    await message.reply(f"ไอ้เหี้ยกู Error: ```{e}```")
+                    await message.reply(f"กู Errorว่ะพวก แคปไอ้สัสนี่ส่งแอดมินด้วย... Error: {e}")
     
     await bot.process_commands(message)
 
