@@ -72,3 +72,5 @@ async def on_message(message):
                     await message.reply("สมองลัดวงจรว่ะ! สงสัยรูปมึงจะอุบาทว์เกินกูรับไหว ลองใหม่ดิ๊")
     
     await bot.process_commands(message)
+# รันบอทด้วย Token จาก Secrets
+bot.run(os.environ['DISCORD_BOT_TOKEN'])
