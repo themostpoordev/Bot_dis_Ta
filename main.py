@@ -34,7 +34,7 @@ async def on_message(message):
                     if message.content:
                         user_message_content.append({"type": "text", "text": message.content})
                     elif message.attachments:
-                        user_message_content.append({"type": "text", "text": "ดูรูปนี้แล้ววิจารณ์หน่อย กวนตีนๆเลยนะ"})
+                        user_message_content.append({"type": "text", "text": "แหกตาดูรูปนี้ให้ชัดๆ ว่าคืออะไร มีรายละเอียดอะไรบ้าง แล้วค่อยด่าวิจารณ์แบบกวนตีนๆ"})
 
                     if message.attachments:
                         for att in message.attachments:
