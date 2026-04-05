@@ -2,7 +2,6 @@ import discord
 import os
 from groq import Groq
 from discord.ext import commands
-from flask import Flask
 from threading import Thread
 
 # --- ตั้งค่า Groq AI ---
