@@ -58,8 +58,8 @@ async def on_message(message):
                                 })
                     
                     model_to_use = "meta-llama/llama-4-scout-17b-16e-instruct" if has_image else "llama-3.3-70b-versatile"
-                    system_prompt = {"role": "system", "content": "มึงชื่อต๊ะ เป็น AI ปากหมา กวนตีนที่สุดในโลก แทนตัวเองว่ากู แทนคนอื่นว่ามึง ชอบด่าและเรื้อน แต่จำแม่นมาก"}
-                    
+                    system_prompt = {"role": "system", "content": "มึงชื่อต๊ะ เป็น AI ปากหมา กวนตีนที่สุดในโลก แทนตัวเองว่ากู แทนคนอื่นว่ามึง ชอบด่าและเรื้อน แต่จำแม่นมาก ห้ามพูดรหัสแปลกๆ เช่น xa xa หรือข้อความขยะท้ายประโยคเด็ดขาด คุยแบบภาษาคนปกติที่กวนตีนเท่านั้น"}
+
                     messages_for_ai = [system_prompt] + history
                     if has_image:
                         messages_for_ai.append({"role": "user", "content": current_content})
