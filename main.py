@@ -17,7 +17,7 @@ ALLOWED_CHANNEL_ID = 1490026273408291128
 
 @bot.event
 async def on_ready():
-    print(f'บอทสายคุย {bot.user.name} ตื่นแล้ว! พร้อมส่องรูปด้วยระบบ Base64 ทะลวงไส้!')
+    print(f'บอทสายคุย {bot.user.name} ตื่นแล้ว! พร้อมส่องรูปด้วยตาคู่ใหม่ Llama-4-Scout!')
 
 @bot.event
 async def on_message(message):
@@ -53,7 +53,8 @@ async def on_message(message):
                                     "image_url": {"url": f"data:{mime_type};base64,{base64_image}"}
                                 })
 
-                    model_to_use = "llama-3.2-90b-vision-preview" if has_image else "llama-3.3-70b-versatile"
+                    # --- จุดที่อัปเดต: เปลี่ยนชื่อโมเดลตัวใหม่ล่าสุดของ Groq ---
+                    model_to_use = "meta-llama/llama-4-scout-17b-16e-instruct" if has_image else "llama-3.3-70b-versatile"
                     final_content = user_message_content if has_image else message.content
 
                     chat_completion = client.chat.completions.create(
@@ -67,7 +68,6 @@ async def on_message(message):
                     await message.reply(reply)
                     
                 except Exception as e:
-                    # ตรงนี้แหละคือตัวคาย Error ของจริง
                     print(f"Error: {e}")
                     await message.reply(f"พังว่ะเพื่อน! เซิร์ฟเวอร์มันบ่นมางี้:\n```\n{e}\n```")
     
