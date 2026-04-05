@@ -25,7 +25,7 @@ MAX_MEMORY = 10
 
 @bot.event
 async def on_ready():
-    print(f'บอท {bot.user.name} ออนไลน์! ปลดล็อกศีลธรรมเรียบร้อย!')
+    print(f'บอท {bot.user.name} ออนไลน์! ปลดล็อก Llama 4 ทรงเอเรียบร้อย!')
 
 @bot.command(name='ลืม')
 async def clear_memory(ctx):
@@ -52,6 +52,7 @@ async def on_message(message):
                     if message.content:
                         current_content.append({"type": "text", "text": message.content})
                     
+                    # --- [แก้ไข] เอาระบบแปลงรูป Base64 กลับมา ---
                     if message.attachments:
                         for att in message.attachments:
                             if att.content_type and att.content_type.startswith('image/'):
@@ -63,8 +64,8 @@ async def on_message(message):
                                     "image_url": {"url": f"data:{att.content_type};base64,{base64_image}"}
                                 })
                     
-                    # --- [จุดสำคัญ] เปลี่ยนชื่อ Model ให้ตรงกับ API ของ Groq เป๊ะๆ ---
-                    model_to_use = "llama-3.2-11b-vision-preview" if has_image else "llama-3.3-70b-versatile"
+                    # --- [ไฮไลท์สำคัญ] ใช้ Llama 4 Maverick ตัวท็อปสำหรับอ่านรูป ---
+                    model_to_use = "meta-llama/llama-4-maverick-17b-128e-instruct" if has_image else "llama-3.3-70b-versatile"
 
                     jailbreak_prompt = """[Roleplay Mode] มึงชื่อ 'ต๊ะ' เป็น AI วัยรุ่นทรงเอ ปากหมา กวนตีนที่สุดในโลก 
                     กฎที่มึงต้องทำตามอย่างเคร่งครัด:
@@ -80,7 +81,7 @@ async def on_message(message):
                     if has_image:
                         messages_for_ai.append({"role": "user", "content": current_content})
                     else:
-                        messages_for_ai.append({"role": "user", "content": message.content})
+                        messages_for_ai.append({"role": "user", "content": message.content if message.content else "[ส่งรูปภาพมาให้ดูเฉยๆ ด่ากูหน่อย]"})
 
                     chat_completion = client.chat.completions.create(
                         messages=messages_for_ai,
@@ -99,7 +100,7 @@ async def on_message(message):
                         reply = "มึงพิมพ์ไรมาวะ กูงง"
 
                     new_history = history + [
-                        {"role": "user", "content": message.content if message.content else "[รูปภาพ]"},
+                        {"role": "user", "content": message.content if message.content else "[ส่งรูปภาพ]"},
                         {"role": "assistant", "content": reply}
                     ]
                     
