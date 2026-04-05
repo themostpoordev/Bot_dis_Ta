@@ -12,7 +12,7 @@ intents.message_content = True
 bot = commands.Bot(command_prefix='!', intents=intents)
 
 # !!! อย่าลืมเปลี่ยนเลข ID ห้องตรงนี้ !!!
-ALLOWED_CHANNEL_ID = 14900026273408291128
+ALLOWED_CHANNEL_ID = 1490026273408291128
 
 @bot.event
 async def on_ready():
