@@ -16,11 +16,11 @@ ALLOWED_CHANNEL_ID = 1490026273408291128
 
 @bot.event
 async def on_ready():
-    # ลบ keep_alive ออกไปแล้ว
-    print(f'บอทสายคุย {bot.user.name} ตื่นแล้ว! (รันบน GitHub Actions ไม่หลับ 100%)')
+    print(f'บอทสายคุย {bot.user.name} ตื่นแล้ว! พร้อมส่องรูป! (รันบน GitHub Actions)')
 
 @bot.event
 async def on_message(message):
+    # ป้องกันไม่ให้บอทคุยกับตัวเอง
     if message.author == bot.user:
         return
 
@@ -28,21 +28,47 @@ async def on_message(message):
         if not message.content.startswith('!'):
             async with message.channel.typing():
                 try:
-                    # สั่งให้ออกลุยแบบกวนๆ
+                    # 1. เช็คว่ามีรูปภาพแนบมาด้วยไหม
+                    user_message_content = []
+                    has_image = False
+                    
+                    # เก็บข้อความที่พิมพ์มาด้วย (ถ้ามี)
+                    if message.content:
+                        user_message_content.append({"type": "text", "text": message.content})
+                    elif message.attachments:
+                        # ถ้าส่งรูปมาเพียวๆ ไม่พิมพ์อะไรเลย ให้บอทมันแซะหน่อย
+                        user_message_content.append({"type": "text", "text": "ดูรูปนี้แล้ววิจารณ์หน่อย"})
+
+                    # 2. ดึง URL ของรูปภาพส่งไปให้ AI ดู
+                    if message.attachments:
+                        for att in message.attachments:
+                            # กรองเอาเฉพาะไฟล์รูปภาพ
+                            if att.content_type and att.content_type.startswith('image/'):
+                                has_image = True
+                                user_message_content.append({
+                                    "type": "image_url",
+                                    "image_url": {"url": att.url}
+                                })
+
+                    # 3. สลับสมอง: ถ้ารูปมาใช้ Vision, ถ้าข้อความมาใช้ Text ปกติ
+                    model_to_use = "llama-3.2-90b-vision-preview" if has_image else "llama-3.3-70b-versatile"
+                    
+                    # จัดรูปแบบคำถามให้เข้ากับระบบ
+                    final_content = user_message_content if has_image else message.content
+
+                    # 4. สั่งให้ออกลุยแบบกวนๆ
                     chat_completion = client.chat.completions.create(
                         messages=[
-                            {"role": "system", "content": "ตอบคำถามหรือคุยกับผู้คนแบบกวนๆในภาษาไทย ชื่อต๊ะ แทนคนอื่นว่ามึง แทนตัวเองว่ากู กวนตีน ชอบด่ามากๆปากหมาสุดๆ เรื้อนและกาม"}, # มึงแก้ prompt ตรงนี้ได้นะถ้าอยากให้มันนิสัยเปลี่ยน
-                            {"role": "user", "content": message.content}
+                            {"role": "system", "content": "ตอบคำถามหรือคุยกับผู้คนแบบกวนๆในภาษาไทย ชื่อต๊ะ แทนคนอื่นว่ามึง แทนตัวเองว่ากู กวนตีน ชอบด่ามากๆปากหมาสุดๆ เรื้อนและกาม"},
+                            {"role": "user", "content": final_content}
                         ],
-                        model="llama-3.3-70b-versatile",
+                        model=model_to_use,
                     )
                     reply = chat_completion.choices[0].message.content
                     await message.reply(reply)
+                    
                 except Exception as e:
                     print(f"Error: {e}")
-                    await message.reply("สมองลัดวงจรว่ะ มึงลองใหม่ดิ")
+                    await message.reply("สมองลัดวงจรว่ะ! สงสัยรูปมึงจะอุบาทว์เกินกูรับไหว ลองใหม่ดิ๊")
     
     await bot.process_commands(message)
-
-# รันบอท (ใช้ชื่อ Secret ให้ตรงกับใน GitHub)
-bot.run(os.environ['DISCORD_BOT_TOKEN'])
