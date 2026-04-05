@@ -1,5 +1,6 @@
 import discord
 import os
+import base64
 from groq import Groq
 from discord.ext import commands
 
@@ -11,16 +12,15 @@ intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix='!', intents=intents)
 
-# !!! อย่าลืมเปลี่ยนเลข ID ห้องตรงนี้ !!!
+# !!! อย่าลืมเช็คเลข ID ห้องให้ตรงนะ !!!
 ALLOWED_CHANNEL_ID = 1490026273408291128
 
 @bot.event
 async def on_ready():
-    print(f'บอทสายคุย {bot.user.name} ตื่นแล้ว! พร้อมส่องรูป! (รันบน GitHub Actions)')
+    print(f'บอทสายคุย {bot.user.name} ตื่นแล้ว! พร้อมส่องรูปด้วยระบบ Base64 ทะลวงไส้!')
 
 @bot.event
 async def on_message(message):
-    # ป้องกันไม่ให้บอทคุยกับตัวเอง
     if message.author == bot.user:
         return
 
@@ -28,35 +28,34 @@ async def on_message(message):
         if not message.content.startswith('!'):
             async with message.channel.typing():
                 try:
-                    # 1. เช็คว่ามีรูปภาพแนบมาด้วยไหม
                     user_message_content = []
                     has_image = False
                     
-                    # เก็บข้อความที่พิมพ์มาด้วย (ถ้ามี)
                     if message.content:
                         user_message_content.append({"type": "text", "text": message.content})
                     elif message.attachments:
-                        # ถ้าส่งรูปมาเพียวๆ ไม่พิมพ์อะไรเลย ให้บอทมันแซะหน่อย
-                        user_message_content.append({"type": "text", "text": "ดูรูปนี้แล้ววิจารณ์หน่อย"})
+                        user_message_content.append({"type": "text", "text": "ดูรูปนี้แล้ววิจารณ์หน่อย กวนตีนๆเลยนะ"})
 
-                    # 2. ดึง URL ของรูปภาพส่งไปให้ AI ดู
                     if message.attachments:
                         for att in message.attachments:
-                            # กรองเอาเฉพาะไฟล์รูปภาพ
+                            # เช็คว่าเป็นไฟล์รูป
                             if att.content_type and att.content_type.startswith('image/'):
                                 has_image = True
+                                
+                                # --- จุดที่อัปเกรด: โหลดรูปแล้วแปลงเป็นรหัส Base64 ---
+                                image_data = await att.read() # ให้บอทโหลดรูปมาเก็บไว้
+                                base64_image = base64.b64encode(image_data).decode('utf-8') # แปลงเป็นรหัส
+                                mime_type = att.content_type
+                                
+                                # ยัดรหัสรูปลงไปตรงๆ ไม่ง้อลิงก์!
                                 user_message_content.append({
                                     "type": "image_url",
-                                    "image_url": {"url": att.url}
+                                    "image_url": {"url": f"data:{mime_type};base64,{base64_image}"}
                                 })
 
-                    # 3. สลับสมอง: ถ้ารูปมาใช้ Vision, ถ้าข้อความมาใช้ Text ปกติ
                     model_to_use = "llama-3.2-90b-vision-preview" if has_image else "llama-3.3-70b-versatile"
-                    
-                    # จัดรูปแบบคำถามให้เข้ากับระบบ
                     final_content = user_message_content if has_image else message.content
 
-                    # 4. สั่งให้ออกลุยแบบกวนๆ
                     chat_completion = client.chat.completions.create(
                         messages=[
                             {"role": "system", "content": "ตอบคำถามหรือคุยกับผู้คนแบบกวนๆในภาษาไทย ชื่อต๊ะ แทนคนอื่นว่ามึง แทนตัวเองว่ากู กวนตีน ชอบด่ามากๆปากหมาสุดๆ เรื้อนและกาม"},
@@ -68,9 +67,10 @@ async def on_message(message):
                     await message.reply(reply)
                     
                 except Exception as e:
-                    print(f"Error: {e}")
+                    print(f"Error จริงๆที่เกิดขึ้น: {e}")
                     await message.reply("สมองลัดวงจรว่ะ! สงสัยรูปมึงจะอุบาทว์เกินกูรับไหว ลองใหม่ดิ๊")
     
     await bot.process_commands(message)
-# รันบอทด้วย Token จาก Secrets
+
+# รันบอท
 bot.run(os.environ['DISCORD_BOT_TOKEN'])
