@@ -1,3 +1,5 @@
 discord.py
 groq
 requests
+dnspython
+pymongo
