@@ -2,6 +2,7 @@ import discord
 import os
 import base64
 import pymongo
+import re
 from groq import Groq
 from discord.ext import commands
 
@@ -20,27 +21,24 @@ intents.message_content = True
 bot = commands.Bot(command_prefix='!', intents=intents)
 
 ALLOWED_CHANNEL_ID = 1490026273408291128 
-MAX_MEMORY = 15 # เพิ่มความจำให้ยาวขึ้นอีกนิด
+MAX_MEMORY = 10 
 
 @bot.event
 async def on_ready():
-    print(f'บอท {bot.user.name} ออนไลน์! เลิกพ่นภาษาจีนแน่นอน!')
+    print(f'บอท {bot.user.name} ออนไลน์! อัปเกรดสมอง DeepSeek เรียบร้อย!')
 
-# --- ฟังก์ชันใหม่: สั่งล้างสมอง ---
 @bot.command(name='ลืม')
 async def clear_memory(ctx):
     user_id = str(ctx.author.id)
     memory_collection.delete_one({"user_id": user_id})
-    await ctx.reply("มึงมาล้างสมองกูหาพ่อ")
+    await ctx.reply("มาล้างสมองกูหาพ่อ")
 
 @bot.event
 async def on_message(message):
     if message.author == bot.user:
         return
 
-    # ให้ทำงานเฉพาะในห้องที่กำหนด
     if message.channel.id == ALLOWED_CHANNEL_ID:
-        # ถ้าไม่ใช่คำสั่ง ! (เช่น !ลืม) ให้บอทตอบปกติ
         if not message.content.startswith('!'):
             async with message.channel.typing():
                 try:
@@ -65,10 +63,15 @@ async def on_message(message):
                                     "image_url": {"url": f"data:{att.content_type};base64,{base64_image}"}
                                 })
                     
-                    # --- แก้จุดพัง: เปลี่ยนมาใช้ Llama-3.3-70b ตัวเดียวไปเลย นิ่งกว่า ไม่พ่นภาษาจีน ---
-                    model_to_use = "llama-3.3-70b-versatile"
+                    # --- การเลือก Model แบบฉลาดที่สุด ---
+                    if has_image:
+                        # ถ้ามีรูปต้องใช้ตัว Vision
+                        model_to_use = "llama-3.2-11b-vision-preview"
+                    else:
+                        # ถ้าคุยปกติใช้ DeepSeek R1 (ฉลาดระดับเทพ)
+                        model_to_use = "deepseek-r1-distill-llama-70b"
                     
-                    system_prompt = {"role": "system", "content": "มึงชื่อต๊ะ เป็น AI ปากหมา กวนตีนที่สุดในโลก แทนตัวเองว่ากู แทนคนอื่นว่ามึง ชอบด่าและเรื้อน ห้ามพูดภาษาจีน ห้ามพ่นรหัสขยะ ห้ามสุภาพ คุยไทยคำด่าคำแบบคนไทยเท่านั้น"}
+                    system_prompt = {"role": "system", "content": "มึงชื่อต๊ะ เป็น AI ปากหมา กวนตีนที่สุดในโลก แทนตัวเองว่ากู แทนคนอื่นว่ามึง ชอบด่าและเรื้อน ห้ามพูดภาษาจีน/เกาหลี/ญี่ปุ่น ห้ามพ่นรหัสขยะ ห้ามพูดสุภาพ คุยไทยคำด่าคำเท่านั้น"}
                     
                     messages_for_ai = [system_prompt] + history
                     if has_image:
@@ -79,11 +82,17 @@ async def on_message(message):
                     chat_completion = client.chat.completions.create(
                         messages=messages_for_ai,
                         model=model_to_use,
-                        temperature=0.9, # ลดความกาวลงนิดนึง
                     )
                     reply = chat_completion.choices[0].message.content
                     
-                    # อัปเดต DB
+                    # --- [ไม้ตาย] ตัดส่วนที่เป็น <think> ออก (DeepSeek ชอบแถมมา) และกรองขยะ ---
+                    reply = re.sub(r'<think>.*?</think>', '', reply, flags=re.DOTALL)
+                    reply = re.sub(r'xa\s*[a-z0-9]*', '', reply)
+                    reply = reply.strip()
+                    
+                    if not reply: # ป้องกันบอทเงียบถ้ามันกรองทิ้งหมด
+                        reply = "มึงพิมพ์ไรมาวะ กูงง"
+
                     new_history = history + [
                         {"role": "user", "content": message.content if message.content else "[รูปภาพ]"},
                         {"role": "assistant", "content": reply}
@@ -101,8 +110,7 @@ async def on_message(message):
                     await message.reply(reply)
                     
                 except Exception as e:
-                    print(f"Error: {e}")
-                    await message.reply(f"กู Errorว่ะพวก แคปไอ้สัสนี่ส่งแอดมินด้วย... Error: {e}")
+                    await message.reply(f"กูมึน! ลองใหม่ดิ๊ Error: {e}")
     
     await bot.process_commands(message)
 
